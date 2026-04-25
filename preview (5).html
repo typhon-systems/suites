@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typhon.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#0d0d0b;
+  --off-white:#f0ede8;
+  --muted:#5a5855;
+  --line:rgba(240,237,232,0.07);
+  --accent:#4a6fa5;
+  --accent-faint:rgba(74,111,165,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--black);
+  color:var(--off-white);
+  font-family:'DM Mono',monospace;
+  overflow-x:hidden;
+  cursor:none;
+}
+a,button{cursor:none}
+
+/* CURSOR */
+#cur{position:fixed;width:6px;height:6px;background:var(--off-white);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:difference;transition:width .18s,height .18s}
+#cur-ring{position:fixed;width:30px;height:30px;border:0.5px solid rgba(240,237,232,0.2);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .3s cubic-bezier(.25,1,.5,1),height .3s cubic-bezier(.25,1,.5,1),border-color .3s,top .08s,left .08s}
+.cur-big #cur{width:12px;height:12px}
+.cur-big #cur-ring{width:48px;height:48px;border-color:rgba(74,111,165,0.4)}
+
+/* NOISE */
+body::after{content:'';position:fixed;inset:0;opacity:.032;pointer-events:none;z-index:8000;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* GRID */
+.grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:72px 72px;
+  mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,black,transparent);
+  -webkit-mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,black,transparent);
+}
+
+/* KEYFRAMES */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes floatA{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-14px) rotate(1.5deg)}}
+@keyframes floatB{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-9px) rotate(-1deg)}}
+@keyframes floatC{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes lineGrow{from{height:0}to{height:100%}}
+@keyframes dot-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.6);opacity:.5}}
+
+/* VIEWS */
+.view{display:none;flex-direction:column;min-height:100vh}
+.view.on{display:flex}
+
+/* ═══════════════════════════════════════
+   LANDING
+═══════════════════════════════════════ */
+#v-land{background:var(--black);position:relative}
+
+/* NAV */
+.l-nav{
+  position:fixed;top:0;left:0;right:0;height:54px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 52px;z-index:400;
+  border-bottom:0.5px solid var(--line);
+  background:rgba(13,13,11,0.75);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.l-wm{font-family:'Lora',serif;font-size:19px;letter-spacing:-.3px;opacity:0;animation:fadeUp .7s .1s forwards}
+.l-nav-links{display:flex;gap:36px;opacity:0;animation:fadeUp .7s .2s forwards}
+.l-nav-link{font-size:10px;color:var(--muted);letter-spacing:.7px;text-transform:uppercase;text-decoration:none;transition:color .15s}
+.l-nav-link:hover{color:var(--off-white)}
+.l-nav-right{display:flex;gap:8px;align-items:center;opacity:0;animation:fadeUp .7s .3s forwards}
+.btn-ghost{height:30px;padding:0 14px;background:transparent;border:0.5px solid rgba(240,237,232,0.18);border-radius:2px;color:rgba(240,237,232,.55);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.5px;transition:border-color .15s,color .15s}
+.btn-ghost:hover{border-color:rgba(240,237,232,.4);color:var(--off-white)}
+.btn-solid{height:30px;padding:0 16px;background:var(--accent);border:none;border-radius:2px;color:#fff;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.5px;transition:background .15s}
+.btn-solid:hover{background:#3a5a90}
+
+/* HERO */
+.l-hero{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:120px 52px 80px;text-align:center;
+  position:relative;z-index:1;
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  border:0.5px solid rgba(74,111,165,.3);
+  border-radius:2px;padding:5px 12px;
+  font-size:10px;color:var(--accent);letter-spacing:.8px;
+  text-transform:uppercase;margin-bottom:40px;
+  opacity:0;animation:fadeUp .7s .5s forwards;
+}
+.hero-tag-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:dot-pulse 2s infinite}
+.hero-h1{
+  font-family:'Lora',serif;
+  font-size:clamp(52px,7vw,88px);
+  font-weight:400;line-height:1.05;letter-spacing:-3px;
+  max-width:900px;margin-bottom:28px;
+  opacity:0;animation:fadeUp .9s .65s forwards;
+}
+.hero-h1 em{font-style:italic;color:rgba(240,237,232,.45)}
+.hero-sub{
+  font-size:13px;color:var(--muted);line-height:1.9;
+  max-width:440px;margin-bottom:52px;font-weight:300;
+  opacity:0;animation:fadeUp .8s .8s forwards;
+}
+.hero-ctas{
+  display:flex;gap:12px;align-items:center;justify-content:center;
+  opacity:0;animation:fadeUp .8s .95s forwards;
+}
+.cta-main{
+  height:44px;padding:0 32px;
+  background:var(--off-white);color:var(--black);
+  border:none;border-radius:2px;
+  font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.6px;
+  transition:background .15s,transform .15s;
+}
+.cta-main:hover{background:#e0ddd8;transform:translateY(-1px)}
+.cta-sub{
+  height:44px;padding:0 24px;
+  background:transparent;color:rgba(240,237,232,.5);
+  border:0.5px solid rgba(240,237,232,.15);border-radius:2px;
+  font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.5px;
+  transition:border-color .15s,color .15s;
+}
+.cta-sub:hover{border-color:rgba(240,237,232,.35);color:var(--off-white)}
+
+/* FLOATING SHAPES */
+.shapes{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.shape{position:absolute;border:0.5px solid rgba(74,111,165,.18);border-radius:2px}
+.sh1{width:220px;height:220px;top:12%;left:7%;animation:floatA 9s ease-in-out infinite;opacity:.4}
+.sh2{width:120px;height:120px;top:20%;right:10%;animation:floatB 11s ease-in-out infinite .5s;opacity:.25;border-style:dashed}
+.sh3{width:60px;height:60px;bottom:28%;left:12%;animation:floatC 7s ease-in-out infinite 1s;opacity:.35;transform:rotate(45deg)}
+.sh4{width:340px;height:1px;background:rgba(74,111,165,.15);border:none;top:55%;right:5%;animation:floatB 13s ease-in-out infinite;opacity:.4}
+.sh5{width:1px;height:200px;background:rgba(240,237,232,.06);border:none;top:30%;left:50%;animation:floatA 10s ease-in-out infinite 2s}
+.sh-dot{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--accent);opacity:.4}
+.sd1{top:32%;left:18%;animation:dot-pulse 4s infinite}
+.sd2{top:60%;right:22%;animation:dot-pulse 4s infinite 1.3s}
+.sd3{top:45%;left:72%;animation:dot-pulse 4s infinite 2.6s}
+
+/* TICKER */
+.ticker{
+  border-top:0.5px solid var(--line);border-bottom:0.5px solid var(--line);
+  padding:14px 0;overflow:hidden;position:relative;z-index:1;
+  opacity:0;animation:fadeIn .8s 1.4s forwards;
+}
+.ticker-inner{display:flex;gap:0;white-space:nowrap;animation:marquee 30s linear infinite}
+.ticker-item{
+  display:inline-flex;align-items:center;gap:20px;
+  padding:0 40px;font-size:10px;color:var(--muted);letter-spacing:.7px;text-transform:uppercase;
+}
+.ticker-sep{width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.4}
+
+/* MODULES SECTION */
+.l-modules{
+  padding:100px 52px;position:relative;z-index:1;
+  border-top:0.5px solid var(--line);
+}
+.section-label{
+  font-size:9px;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:48px;display:flex;align-items:center;gap:12px;
+}
+.section-label::after{content:'';flex:1;height:0.5px;background:var(--line);transform-origin:left;animation:scaleX 1s .3s both}
+.modules-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+  border:0.5px solid var(--line);
+}
+.mod-card{
+  padding:28px 24px;border-right:0.5px solid var(--line);border-bottom:0.5px solid var(--line);
+  transition:background .2s;position:relative;overflow:hidden;
+}
+.mod-card:hover{background:rgba(74,111,165,.06)}
+.mod-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:var(--accent);transform:scaleX(0);transform-origin:left;
+  transition:transform .3s cubic-bezier(.25,1,.5,1);
+}
+.mod-card:hover::before{transform:scaleX(1)}
+.mod-card:nth-child(4n){border-right:none}
+.mod-card:nth-last-child(-n+4){border-bottom:none}
+.mod-name{font-size:11px;letter-spacing:.5px;color:var(--off-white);margin-bottom:6px;text-transform:uppercase}
+.mod-desc{font-size:10px;color:var(--muted);line-height:1.65;font-weight:300}
+.mod-status{
+  position:absolute;top:20px;right:20px;
+  width:5px;height:5px;border-radius:50%;background:#3a6a4a;
+}
+.mod-status.maint{background:#7a6030}
+.mod-status.restr{background:rgba(240,237,232,.15)}
+
+/* FEATURES */
+.l-features{
+  display:grid;grid-template-columns:1fr 1fr;
+  border-top:0.5px solid var(--line);
+}
+.feat-left{
+  padding:100px 52px;border-right:0.5px solid var(--line);
+  display:flex;flex-direction:column;justify-content:center;
+}
+.feat-right{
+  padding:100px 52px;
+  display:flex;flex-direction:column;gap:0;
+}
+.feat-big-num{
+  font-family:'Lora',serif;font-size:120px;font-weight:400;
+  color:rgba(240,237,232,.04);line-height:1;letter-spacing:-6px;
+  margin-bottom:-20px;
+}
+.feat-h2{
+  font-family:'Lora',serif;font-size:38px;font-weight:400;
+  line-height:1.2;letter-spacing:-1.2px;margin-bottom:20px;
+}
+.feat-h2 em{font-style:italic;color:rgba(240,237,232,.4)}
+.feat-p{font-size:12px;color:var(--muted);line-height:1.9;font-weight:300;max-width:360px}
+.feat-item{
+  padding:32px 0;border-bottom:0.5px solid var(--line);
+  display:flex;gap:24px;align-items:flex-start;
+}
+.feat-item:first-child{padding-top:0}
+.feat-item:last-child{border-bottom:none}
+.feat-n{
+  font-family:'Lora',serif;font-size:22px;color:rgba(240,237,232,.15);
+  font-weight:400;flex-shrink:0;margin-top:2px;
+}
+.feat-body{}
+.feat-title{font-size:12px;color:var(--off-white);letter-spacing:.3px;margin-bottom:6px}
+.feat-desc{font-size:11px;color:var(--muted);line-height:1.75;font-weight:300}
+
+/* STATEMENT */
+.l-statement{
+  padding:120px 52px;text-align:center;
+  border-top:0.5px solid var(--line);
+  position:relative;overflow:hidden;
+}
+.statement-line{
+  position:absolute;top:0;bottom:0;left:50%;width:0.5px;
+  background:linear-gradient(transparent,var(--accent),transparent);
+  opacity:.2;
+}
+.statement-h{
+  font-family:'Lora',serif;font-size:clamp(36px,5vw,60px);
+  font-weight:400;letter-spacing:-2px;line-height:1.15;
+  max-width:740px;margin:0 auto 32px;
+}
+.statement-h em{font-style:italic;color:var(--accent)}
+.statement-sub{font-size:12px;color:var(--muted);max-width:380px;margin:0 auto 44px;line-height:1.85;font-weight:300}
+.statement-cta{
+  height:46px;padding:0 36px;
+  background:var(--accent);border:none;border-radius:2px;
+  color:#fff;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.6px;
+  transition:background .15s,transform .15s;
+}
+.statement-cta:hover{background:#3a5a90;transform:translateY(-1px)}
+
+/* FOOTER */
+.l-footer{
+  border-top:0.5px solid var(--line);
+  padding:28px 52px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.foot-wm{font-family:'Lora',serif;font-size:15px;color:rgba(240,237,232,.3);letter-spacing:-.2px}
+.foot-copy{font-size:10px;color:var(--muted);letter-spacing:.3px}
+.foot-links{display:flex;gap:28px}
+.foot-link{font-size:10px;color:var(--muted);text-decoration:none;letter-spacing:.4px;transition:color .15s}
+.foot-link:hover{color:var(--off-white)}
+
+/* ═══════════════════════════════════════
+   MODAL
+═══════════════════════════════════════ */
+.modal-wrap{
+  position:fixed;inset:0;background:rgba(13,13,11,.75);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;z-index:600;
+}
+.modal-wrap.on{display:flex}
+.modal{
+  width:340px;background:#161614;
+  border:0.5px solid rgba(240,237,232,.12);
+  border-radius:3px;padding:32px;
+  animation:fadeUp .25s both;
+}
+.modal-wm{font-family:'Lora',serif;font-size:20px;letter-spacing:-.3px;margin-bottom:8px}
+.modal-hr{height:0.5px;background:rgba(240,237,232,.08);margin-bottom:22px}
+.modal-lbl{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:16px}
+.mfi{margin-bottom:9px}
+.mfi input{
+  width:100%;height:36px;
+  background:rgba(240,237,232,.04);
+  border:0.5px solid rgba(240,237,232,.1);
+  border-radius:2px;padding:0 13px;
+  font-family:'DM Mono',monospace;font-size:12px;color:var(--off-white);
+  outline:none;transition:border-color .15s,background .15s;
+}
+.mfi input:focus{border-color:rgba(74,111,165,.5);background:rgba(74,111,165,.04)}
+.mfi input::placeholder{color:rgba(240,237,232,.2)}
+.merr{font-size:10px;color:#c07070;min-height:14px;margin-bottom:5px;letter-spacing:.2px}
+.mbtn{
+  width:100%;height:36px;
+  background:var(--off-white);color:var(--black);
+  border:none;border-radius:2px;
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.7px;
+  transition:background .15s;
+}
+.mbtn:hover{background:#e0ddd8}
+.modal-tog{margin-top:14px;font-size:11px;color:var(--muted);text-align:center}
+.modal-tog span{color:var(--accent);cursor:none}
+.modal-tog span:hover{text-decoration:underline}
+.modal-st{font-size:10px;color:#6a9a78;text-align:center;margin-top:10px;min-height:13px;letter-spacing:.3px}
+.modal-x{float:right;font-size:18px;color:rgba(240,237,232,.25);background:none;border:none;font-family:sans-serif;margin-top:-3px;transition:color .15s}
+.modal-x:hover{color:var(--off-white)}
+
+/* ═══════════════════════════════════════
+   SYSTEM / APP LAUNCHER — DARK OPERATIONS VIEW
+═══════════════════════════════════════ */
+#v-sys{background:var(--black);color:var(--off-white);font-family:'Inter',sans-serif;min-height:100vh;position:relative;overflow:hidden}
+#v-sys::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(240,237,232,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(240,237,232,0.045) 1px,transparent 1px);background-size:72px 72px;mask-image:radial-gradient(ellipse 85% 70% at 50% 0%,black,transparent 78%);-webkit-mask-image:radial-gradient(ellipse 85% 70% at 50% 0%,black,transparent 78%)}
+#v-sys::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle at 22% 18%,rgba(74,111,165,0.09),transparent 28%),radial-gradient(circle at 80% 12%,rgba(240,237,232,0.035),transparent 24%)}
+#v-sys .tbar,#v-sys .sys-body{position:relative;z-index:1}
+.tbar{height:42px;background:rgba(13,13,11,0.78);border-bottom:0.5px solid rgba(240,237,232,0.08);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.tbar-l{display:flex;align-items:center;height:100%}.tbar-wm{font-family:'Lora',serif;font-size:16px;color:var(--off-white);letter-spacing:-.25px;padding:0 22px;height:100%;display:flex;align-items:center}.tbar-mod{font-size:10px;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;padding:0 16px;opacity:0;transition:opacity .15s;height:100%;display:flex;align-items:center;border-left:0.5px solid rgba(240,237,232,0.08)}.tbar-mod.on{opacity:1}.tbar-r{display:flex;align-items:center;height:100%}.tbar-status{height:100%;display:flex;align-items:center;gap:7px;padding:0 18px;font-size:11px;color:rgba(240,237,232,.46);border-left:0.5px solid rgba(240,237,232,0.08)}.tbar-sys-dot{width:5px;height:5px;border-radius:50%;background:#5a8a6a;flex-shrink:0;box-shadow:0 0 12px rgba(90,138,106,.25)}.tbar-user{font-size:11px;color:rgba(240,237,232,.46);padding:0 18px;border-left:0.5px solid rgba(240,237,232,0.08);height:100%;display:flex;align-items:center;gap:12px}.tbar-signout{font-size:10px;color:var(--accent);cursor:none;text-decoration:none;transition:color .12s}.tbar-signout:hover{color:var(--off-white)}
+.sys-body{display:grid;grid-template-columns:48px 1fr 280px;min-height:calc(100vh - 42px)}.rail{background:rgba(240,237,232,0.015);border-right:0.5px solid rgba(240,237,232,0.07);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:18px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}.rail-btn{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:2px;color:rgba(240,237,232,.34);transition:background .12s,color .12s,border-color .12s;border:0.5px solid transparent}.rail-btn:hover,.rail-btn.on{background:rgba(74,111,165,0.12);color:var(--accent);border-color:rgba(74,111,165,.24)}.rail-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.rail-spacer{flex:1}.rail-dot{width:3px;height:3px;border-radius:50%;background:rgba(240,237,232,.18);margin-bottom:4px}
+.main-panel{background:transparent;padding:32px 28px 48px;display:flex;flex-direction:column;gap:28px}.launch-head{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:0.5px solid rgba(240,237,232,0.08);padding-bottom:18px}.launch-kicker{font-size:10px;color:rgba(240,237,232,.42);letter-spacing:.9px;text-transform:uppercase;margin-bottom:6px}.launch-title{font-family:'Lora',serif;font-size:32px;font-weight:400;letter-spacing:-.7px;color:var(--off-white)}.launch-meta{font-size:11px;color:rgba(240,237,232,.36);text-align:right;line-height:1.7}.app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,112px));gap:14px}.app-tile{height:112px;background:rgba(240,237,232,0.025);border:0.5px solid rgba(240,237,232,0.09);border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:background .12s,border-color .12s,transform .12s;cursor:none;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}.app-tile:hover{background:rgba(240,237,232,0.045);border-color:rgba(74,111,165,.42);transform:translateY(-1px)}.app-tile.on{border-color:rgba(74,111,165,.86);background:rgba(74,111,165,0.10)}.app-icon{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:inset 0 1px 1px rgba(255,255,255,.18);filter:saturate(.82) brightness(.94)}.app-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.app-label{font-size:11px;color:var(--off-white);letter-spacing:.1px}.app-sub{font-size:9px;color:rgba(240,237,232,.34);margin-top:-5px}.empty-note{margin-top:auto;border-top:0.5px solid rgba(240,237,232,0.08);padding-top:18px;font-size:11px;color:rgba(240,237,232,.28);letter-spacing:.2px}
+.detail-panel{background:rgba(240,237,232,0.018);border-left:0.5px solid rgba(240,237,232,0.08);padding:22px 18px;display:flex;flex-direction:column;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.dp-title{font-family:'Lora',serif;font-size:18px;letter-spacing:-.25px;color:var(--off-white);margin-bottom:6px}.dp-desc{font-size:11px;color:rgba(240,237,232,.46);line-height:1.6;margin-bottom:22px}.dp-hr{height:0.5px;background:rgba(240,237,232,0.08);margin-bottom:18px}.dp-row{display:flex;justify-content:space-between;gap:16px;font-size:11px;line-height:1.9}.dp-key{color:rgba(240,237,232,.42)}.dp-val{color:rgba(240,237,232,.78);text-align:right}.dp-val.active{color:#6a9a78}.dp-val.maint{color:#b28a4a}.dp-val.restr{color:#b46a6a}.dp-actions{margin-top:auto;display:flex;flex-direction:column;gap:8px}.dp-btn{height:34px;border:0.5px solid rgba(240,237,232,.12);border-radius:3px;background:rgba(240,237,232,.08);color:var(--off-white);font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.2px;transition:background .12s,border-color .12s;cursor:none}.dp-btn:hover{background:rgba(74,111,165,.14);border-color:rgba(74,111,165,.45)}.dp-btn.secondary{background:transparent;color:rgba(240,237,232,.52);border:0.5px solid rgba(240,237,232,.10)}.dp-btn.secondary:hover{background:rgba(240,237,232,.035);color:var(--off-white);border-color:rgba(240,237,232,.20)}
+
+@media(max-width:900px){
+  .sys-body{grid-template-columns:48px 1fr}.detail-panel{display:none}.app-grid{grid-template-columns:repeat(auto-fill,minmax(98px,1fr))}.app-tile{height:104px}.launch-head{align-items:flex-start;flex-direction:column;gap:10px}.launch-meta{text-align:left}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<!-- LANDING -->
+<div class="view on" id="v-land">
+  <div class="grid-bg"></div>
+
+  <nav class="l-nav">
+    <div class="l-wm">Typhon.</div>
+    <div class="l-nav-links">
+      <a class="l-nav-link" href="#">Product</a>
+      <a class="l-nav-link" href="#">Modules</a>
+      <a class="l-nav-link" href="#">Pricing</a>
+    </div>
+    <div class="l-nav-right">
+      <button class="btn-ghost" onclick="openModal('signin')">Sign in</button>
+      <button class="btn-solid" onclick="openModal('register')">Get started</button>
+    </div>
+  </nav>
+
+  <section class="l-hero">
+    <div class="shapes">
+      <div class="shape sh1"></div>
+      <div class="shape sh2"></div>
+      <div class="shape sh3"></div>
+      <div class="shape sh4"></div>
+      <div class="shape sh5"></div>
+      <div class="shape-dot sh-dot sd1"></div>
+      <div class="shape-dot sh-dot sd2"></div>
+      <div class="shape-dot sh-dot sd3"></div>
+    </div>
+    <div class="hero-tag">
+      <div class="hero-tag-dot"></div>
+      Unified work suite
+    </div>
+    <h1 class="hero-h1">Everything your team needs.<br><em>Nothing it doesn't.</em></h1>
+    <p class="hero-sub">Typhon brings documents, finance, projects, and communication into one tightly integrated system — built for precision, not productivity theatre.</p>
+    <div class="hero-ctas">
+      <button class="cta-main" onclick="openModal('register')">Start for free</button>
+      <button class="cta-sub" onclick="openModal('signin')">Sign in</button>
+    </div>
+  </section>
+
+  <div class="ticker">
+    <div class="ticker-inner" id="ticker-inner"></div>
+  </div>
+
+  <section class="l-modules" style="position:relative;z-index:1">
+    <div class="section-label">Modules</div>
+    <div class="modules-grid" id="modules-grid"></div>
+  </section>
+
+  <section class="l-features">
+    <div class="feat-left">
+      <div class="feat-big-num">01</div>
+      <h2 class="feat-h2">One system.<br><em>Genuinely connected.</em></h2>
+      <p class="feat-p">Most tools talk about integration. Typhon is built from a single data layer — every module shares context, history, and state without configuration or plugins.</p>
+    </div>
+    <div class="feat-right">
+      <div class="feat-item">
+        <div class="feat-n">02</div>
+        <div class="feat-body">
+          <div class="feat-title">Calm by default</div>
+          <div class="feat-desc">No notifications demanding your attention. No dashboards full of widgets. Information surfaces when it's relevant — and disappears when it isn't.</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-n">03</div>
+        <div class="feat-body">
+          <div class="feat-title">Your identity, everywhere</div>
+          <div class="feat-desc">One account. One set of permissions. Everything follows you — preferences, history, and access — across every surface in the suite.</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-n">04</div>
+        <div class="feat-body">
+          <div class="feat-title">Built for teams under pressure</div>
+          <div class="feat-desc">Typhon doesn't assume you have time to learn it. The system is structured so the right action is always the obvious one.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="l-statement">
+    <div class="statement-line"></div>
+    <h2 class="statement-h">Work that feels like <em>work</em> — not like managing software.</h2>
+    <p class="statement-sub">Typhon gets out of the way. You set the direction — the system handles the rest.</p>
+    <button class="statement-cta" onclick="openModal('register')">Request access</button>
+  </section>
+
+  <footer class="l-footer">
+    <div class="foot-wm">Typhon.</div>
+    <div class="foot-links">
+      <a class="foot-link" href="#">Privacy</a>
+      <a class="foot-link" href="#">Terms</a>
+      <a class="foot-link" href="#">Contact</a>
+    </div>
+    <div class="foot-copy">© 2026 Typhon Suite</div>
+  </footer>
+</div>
+
+<!-- MODAL -->
+<div class="modal-wrap" id="modal-wrap" onclick="closeOut(event)">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div class="modal-wm">Typhon.</div>
+      <button class="modal-x" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-hr"></div>
+    <div class="modal-lbl" id="modal-lbl">Sign in</div>
+    <div class="mfi"><input type="text" id="m-email" placeholder="Username" autocomplete="username" onkeydown="if(event.key==='Enter')doAuth()"></div>
+    <div class="mfi"><input type="password" id="m-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doAuth()"></div>
+    <div class="mfi" id="m-cw" style="display:none"><input type="password" id="m-conf" placeholder="Confirm password" onkeydown="if(event.key==='Enter')doAuth()"></div>
+    <div class="merr" id="m-err"></div>
+    <button class="mbtn" id="m-btn" onclick="doAuth()">Sign in</button>
+    <div class="modal-tog"><span id="m-tog" onclick="toggleMode()">Create an account</span></div>
+    <div class="modal-st" id="m-st"></div>
+  </div>
+</div>
+
+<!-- SYSTEM -->
+<div class="view" id="v-sys">
+  <div class="tbar">
+    <div class="tbar-l">
+      <div class="tbar-wm">Typhon.</div>
+      <div class="tbar-mod" id="tbar-mod">Core</div>
+    </div>
+    <div class="tbar-r">
+      <div class="tbar-status"><div class="tbar-sys-dot"></div><span>System ready.</span></div>
+      <div class="tbar-user"><span id="tbar-name"></span><span class="tbar-signout" onclick="doSignOut()">Sign out</span></div>
+    </div>
+  </div>
+  <div class="sys-body">
+    <div class="rail" id="rail">
+      <div class="rail-btn on" title="Applications"><svg viewBox="0 0 16 16"><path d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z"/></svg></div>
+      <div class="rail-btn" title="Queue"><svg viewBox="0 0 16 16"><path d="M4 5h8M4 8h8M4 11h5"/></svg></div>
+      <div class="rail-btn" title="Relay"><svg viewBox="0 0 16 16"><path d="M3 8Q8 4 13 8Q8 12 3 8"/></svg></div>
+      <div class="rail-spacer"></div>
+      <div class="rail-dot"></div>
+    </div>
+    <main class="main-panel">
+      <section class="launch-head">
+        <div>
+          <div class="launch-kicker">Applications</div>
+          <div class="launch-title">System modules</div>
+        </div>
+        <div class="launch-meta">13 modules available<br>Local prototype build</div>
+      </section>
+      <section class="app-grid" id="app-grid"></section>
+      <div class="empty-note" id="empty-note">Select a module to inspect status and launch options.</div>
+    </main>
+    <aside class="detail-panel">
+      <div class="dp-title" id="dp-title">Core</div>
+      <div class="dp-desc" id="dp-desc">Select a module to view its operational status.</div>
+      <div class="dp-hr"></div>
+      <div class="dp-row"><span class="dp-key">Status</span><span class="dp-val active" id="dp-status">Ready</span></div>
+      <div class="dp-row"><span class="dp-key">Version</span><span class="dp-val" id="dp-version">1.0</span></div>
+      <div class="dp-row"><span class="dp-key">Module</span><span class="dp-val" id="dp-module">core.launcher</span></div>
+      <div class="dp-actions">
+        <button class="dp-btn" id="dp-open">Open Module</button>
+        <button class="dp-btn secondary" id="dp-details">View Details</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+/* CURSOR */
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+let rx=0,ry=0,mx=0,my=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+(function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing)})();
+document.addEventListener('mouseover',e=>{if(e.target.closest('button,a,.hover-target'))document.body.classList.add('cur-big')});
+document.addEventListener('mouseout',e=>{if(e.target.closest('button,a,.hover-target'))document.body.classList.remove('cur-big')});
+
+/* TICKER */
+const TWORDS=['Script','Ledger','Scope','Pitch','Queue','Flow','Notes','Index','Sync','Link'];
+const ti=document.getElementById('ticker-inner');
+const items=[...TWORDS,...TWORDS].map(w=>`<span class="ticker-item"><span>${w}</span><span class="ticker-sep"></span></span>`).join('');
+ti.innerHTML=items+items;
+
+/* MODULES GRID */
+const MODS=[
+  {n:'Script',d:'Document authoring',s:'a'},
+  {n:'Ledger',d:'Finance & audit',s:'a'},
+  {n:'Scope',d:'Project tracking',s:'a'},
+  {n:'Pitch',d:'Presentations',s:'a'},
+  {n:'Queue',d:'Task dispatch',s:'a'},
+  {n:'Relay',d:'Messaging',s:'m'},
+  {n:'Flow',d:'Process control',s:'a'},
+  {n:'Notes',d:'Capture & search',s:'a'},
+  {n:'Index',d:'Unified search',s:'a'},
+  {n:'Sync',d:'Data sync',s:'a'},
+  {n:'Core',d:'Configuration',s:'r'},
+  {n:'Link',d:'Integrations',s:'a'},
+];
+const grid=document.getElementById('modules-grid');
+MODS.forEach((m,i)=>{
+  const c=document.createElement('div');
+  c.className='mod-card';
+  c.style.opacity='0';
+  c.style.transform='translateY(12px)';
+  c.style.transition=`opacity .5s ${.05*i}s, transform .5s ${.05*i}s`;
+  const sc=m.s==='m'?'maint':m.s==='r'?'restr':'';
+  c.innerHTML=`<div class="mod-status ${sc}"></div><div class="mod-name">${m.n}</div><div class="mod-desc">${m.d}</div>`;
+  grid.appendChild(c);
+});
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.querySelectorAll('.mod-card').forEach(c=>{c.style.opacity='1';c.style.transform='translateY(0)'})}});
+},{threshold:.1});
+obs.observe(grid);
+
+/* AUTH */
+const DB='typhon_db',SE='typhon_sess';
+const gDB=()=>{try{return JSON.parse(localStorage.getItem(DB)||'{}')}catch{return{}}};
+const sDB=d=>localStorage.setItem(DB,JSON.stringify(d));
+const gS=()=>{try{return JSON.parse(localStorage.getItem(SE)||'null')}catch{return null}};
+const sS=d=>localStorage.setItem(SE,JSON.stringify(d));
+const cS=()=>localStorage.removeItem(SE);
+
+let authMode='signin';
+
+function openModal(m){
+  authMode=m;
+  document.getElementById('m-err').textContent='';
+  document.getElementById('m-st').textContent='';
+  document.getElementById('m-email').value='';
+  document.getElementById('m-pass').value='';
+  document.getElementById('m-conf').value='';
+  const isReg=m==='register';
+  document.getElementById('m-cw').style.display=isReg?'block':'none';
+  document.getElementById('m-btn').textContent=isReg?'Create account':'Sign in';
+  document.getElementById('modal-lbl').textContent=isReg?'Create account':'Sign in';
+  document.getElementById('m-tog').textContent=isReg?'Already have an account?':'Create an account';
+  document.getElementById('modal-wrap').classList.add('on');
+  setTimeout(()=>document.getElementById('m-email').focus(),60);
+}
+function closeModal(){document.getElementById('modal-wrap').classList.remove('on')}
+function closeOut(e){if(e.target===document.getElementById('modal-wrap'))closeModal()}
+function toggleMode(){openModal(authMode==='signin'?'register':'signin')}
+
+function doAuth(){
+  const username=document.getElementById('m-email').value.trim();
+  const pass=document.getElementById('m-pass').value;
+  const err=document.getElementById('m-err');
+  const st=document.getElementById('m-st');
+  if(!username||!pass){err.textContent='Complete all required fields.';return;}
+  const db=gDB();
+  if(authMode==='register'){
+    const conf=document.getElementById('m-conf').value;
+    if(pass!==conf){err.textContent='Passwords do not match.';return;}
+    if(db[username]){err.textContent='Username already exists.';return;}
+    db[username]={pass,display:username,created:new Date().toISOString().split('T')[0]};
+    sDB(db);sS({username,display:username});
+    st.textContent='Account created.';
+    setTimeout(()=>{closeModal();enterSystem();},500);
+  } else {
+    if(!db[username]){err.textContent='No account found with this username.';return;}
+    if(db[username].pass!==pass){err.textContent='Incorrect password.';return;}
+    sS({username,display:db[username].display||username});
+    st.textContent='Signing you in…';
+    setTimeout(()=>{closeModal();enterSystem();},400);
+  }
+}
+
+/* SYSTEM */
+const APPS=[
+  {n:'Account',d:'Identity, credentials, and user preferences.',s:'Active',v:'1.1',m:'account.core',c:['#6f7f99','#415577']},
+  {n:'Script',d:'Structured document authoring and controlled publication.',s:'Active',v:'1.4',m:'script.core',c:['#7e9ac8','#263f86']},
+  {n:'Ledger',d:'Tables, records, finance tracking, and audit-ready calculations.',s:'Active',v:'1.2',m:'ledger.core',c:['#76ad78','#2d7338']},
+  {n:'Scope',d:'Research, browsing, source capture, and project visibility.',s:'Active',v:'1.0',m:'scope.core',c:['#a578c2','#5a2d84']},
+  {n:'Pitch',d:'Presentation building with structured slides and controlled exports.',s:'Active',v:'1.1',m:'pitch.core',c:['#d98a4e','#b84d2f']},
+  {n:'Queue',d:'Tasks, dispatch, priority, and operational work routing.',s:'Active',v:'1.3',m:'queue.core',c:['#d2aa4f','#9a7424']},
+  {n:'Relay',d:'Internal messaging and communication relay.',s:'Maintenance',v:'0.9',m:'relay.core',c:['#6aa7d8','#2f6e9f']},
+  {n:'Flow',d:'Forms, processes, approvals, and workflow control.',s:'Active',v:'1.2',m:'flow.core',c:['#65aaa6','#287a76']},
+  {n:'Notes',d:'Fast capture, retrieval, and lightweight knowledge storage.',s:'Active',v:'1.0',m:'notes.core',c:['#8e70d2','#6132a0']},
+  {n:'Index',d:'Unified search and database-style record access.',s:'Active',v:'1.5',m:'index.core',c:['#ca6da1','#9b2e76']},
+  {n:'Sync',d:'Calendar, scheduling, recurrence, and system time coordination.',s:'Active',v:'1.1',m:'sync.core',c:['#68b4cf','#2b83a1']},
+  {n:'Core',d:'System configuration, permissions, and environment settings.',s:'Restricted',v:'1.0',m:'core.admin',c:['#47658f','#183b6a']},
+  {n:'Link',d:'Collaboration, shared spaces, and external integrations.',s:'Active',v:'1.2',m:'link.core',c:['#596aa8','#25316f']},
+];
+const ICONS={
+  Account:'M3 13c0-2.8 2.2-4 5-4s5 1.2 5 4M8 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6',
+  Script:'M4 4h8M4 7h8M4 10h5',Ledger:'M4 4h8v8H4z M4 8h8 M8 4v8',
+  Scope:'M8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10M8 3v10M3 8h10',Pitch:'M8 3a5 5 0 1 0 5 5H8z',
+  Queue:'M4 5h8M4 8h8M4 11h5',Relay:'M3 5h10v7H3z M3 5l5 4 5-4',
+  Flow:'M5 5h4a2 2 0 0 1 0 4H7M11 5h1.5M11 9h1.5',Notes:'M5 3h5l2 2v8H4V3z M10 3v3h3 M6 8h4M6 11h5',
+  Index:'M4 4a4 2 0 1 0 8 0v7a4 2 0 1 1-8 0z M4 4v7',
+  Sync:'M5 4l-2 4h10M11 12l2-4H3',
+  Core:'M4 6l4-3 4 3v4l-4 3-4-3z M8 3v10',
+  Link:'M6 8a2 2 0 0 0 2 2h2a2 2 0 0 0 0-4H9M10 8a2 2 0 0 0-2-2H6a2 2 0 0 0 0 4h1'
+};
+
+function enterSystem(){
+  const s=gS();
+  document.getElementById('tbar-name').textContent=s.display||s.username;
+  buildAppGrid();
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-sys').classList.add('on');
+  document.getElementById('tbar-mod').classList.add('on');
+  selectMod(APPS.find(a=>a.n==='Script'), document.querySelector('.app-tile[data-app="Script"]'));
+}
+
+function buildAppGrid(){
+  const grid=document.getElementById('app-grid');
+  if(grid.dataset.ready==='true')return;
+  APPS.forEach(a=>{
+    const el=document.createElement('div');
+    el.className='app-tile hover-target';
+    el.dataset.app=a.n;
+    el.innerHTML=`<div class="app-icon" style="background:linear-gradient(145deg,${a.c[0]},${a.c[1]})"><svg viewBox="0 0 16 16"><path d="${ICONS[a.n]}"/></svg></div><div class="app-label">${a.n}</div><div class="app-sub">${a.s}</div>`;
+    el.onclick=()=>selectMod(a,el);
+    grid.appendChild(el);
+  });
+  grid.dataset.ready='true';
+}
+
+function selectMod(a,el){
+  document.querySelectorAll('.app-tile').forEach(i=>i.classList.remove('on'));
+  if(el)el.classList.add('on');
+  const tm=document.getElementById('tbar-mod');
+  tm.textContent=a.n;tm.classList.add('on');
+  document.getElementById('dp-title').textContent=a.n;
+  document.getElementById('dp-desc').textContent=a.d;
+  const st=document.getElementById('dp-status');
+  st.textContent=a.s;
+  st.className='dp-val '+(a.s==='Active'?'active':a.s==='Maintenance'?'maint':'restr');
+  document.getElementById('dp-version').textContent=a.v;
+  document.getElementById('dp-module').textContent=a.m;
+  document.getElementById('dp-open').textContent='Open '+a.n;
+  document.getElementById('empty-note').textContent=a.n+' selected. Module shell ready for integration.';
+}
+
+function doSignOut(){
+  cS();
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-land').classList.add('on');
+  document.getElementById('tbar-mod').classList.remove('on');
+  document.querySelectorAll('.app-tile').forEach(i=>i.classList.remove('on'));
+}
+
+(function(){if(gS())enterSystem();})();
+</script>
+</body>
+</html>
