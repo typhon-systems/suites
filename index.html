@@ -650,7 +650,12 @@ function buildAppGrid(){
     el.className='app-tile hover-target';
     el.dataset.app=a.n;
     el.innerHTML=`<div class="app-icon" style="background:linear-gradient(145deg,${a.c[0]},${a.c[1]})"><svg viewBox="0 0 16 16"><path d="${ICONS[a.n]}"/></svg></div><div class="app-label">${a.n}</div><div class="app-sub">${a.s}</div>`;
-    el.onclick=()=>selectMod(a,el);
+    el.onclick=()=>{
+      if(a.n==='Account'){ location.href='account.html'; return; }
+      if(a.n==='Script'){ location.href='script.html'; return; }
+      if(a.n==='Ledger'){ location.href='ledger.html'; return; }
+      selectMod(a,el);
+    };
     grid.appendChild(el);
   });
   grid.dataset.ready='true';
@@ -671,11 +676,11 @@ function selectMod(a,el){
   const openBtn=document.getElementById('dp-open');
   openBtn.textContent='Open '+a.n;
   openBtn.onclick=()=>{
-    if(a.n==='Account'){ location.href='account.html'; return; }
-    if(a.n==='Script'){ location.href='script.html'; return; }
+    const routes={Account:'account.html',Script:'script.html',Ledger:'ledger.html'};
+    if(routes[a.n]){ location.href=routes[a.n]; return; }
     document.getElementById('empty-note').textContent=a.n+' selected. Module shell ready for integration.';
   };
-  document.getElementById('empty-note').textContent=a.n==='Account'?'Account selected. Open module to manage identity and access.':a.n==='Script'?'Script selected. Open module to author structured documents.':a.n+' selected. Module shell ready for integration.';
+  document.getElementById('empty-note').textContent=a.n==='Account'?'Account selected. Open module to manage identity and access.':a.n==='Script'?'Script selected. Open module to author structured documents.':a.n==='Ledger'?'Ledger selected. Open module to calculate, audit, and structure records.':a.n+' selected. Module shell ready for integration.';
 }
 
 function doSignOut(){
