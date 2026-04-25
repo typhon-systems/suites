@@ -549,12 +549,15 @@ const obs=new IntersectionObserver(entries=>{
 obs.observe(grid);
 
 /* AUTH */
-const DB='typhon_db',SE='typhon_sess';
+const DB='typhon_db',SE='typhon_sess',LOG='typhon_log';
 const gDB=()=>{try{return JSON.parse(localStorage.getItem(DB)||'{}')}catch{return{}}};
 const sDB=d=>localStorage.setItem(DB,JSON.stringify(d));
 const gS=()=>{try{return JSON.parse(localStorage.getItem(SE)||'null')}catch{return null}};
 const sS=d=>localStorage.setItem(SE,JSON.stringify(d));
 const cS=()=>localStorage.removeItem(SE);
+const gLog=()=>{try{return JSON.parse(localStorage.getItem(LOG)||'{}')}catch{return{}}};
+const sLog=d=>localStorage.setItem(LOG,JSON.stringify(d));
+function logEvent(username,key){const l=gLog();if(!l[username])l[username]={};l[username][key]=new Date().toISOString();sLog(l);}
 
 let authMode='signin';
 
@@ -589,13 +592,13 @@ function doAuth(){
     if(pass!==conf){err.textContent='Passwords do not match.';return;}
     if(db[username]){err.textContent='Username already exists.';return;}
     db[username]={pass,display:username,created:new Date().toISOString().split('T')[0]};
-    sDB(db);sS({username,display:username});
+    sDB(db);sS({username,display:username});logEvent(username,'lastSignIn');
     st.textContent='Account created.';
     setTimeout(()=>{closeModal();enterSystem();},500);
   } else {
     if(!db[username]){err.textContent='No account found with this username.';return;}
     if(db[username].pass!==pass){err.textContent='Incorrect password.';return;}
-    sS({username,display:db[username].display||username});
+    sS({username,display:db[username].display||username});logEvent(username,'lastSignIn');
     st.textContent='Signing you in…';
     setTimeout(()=>{closeModal();enterSystem();},400);
   }
@@ -665,8 +668,13 @@ function selectMod(a,el){
   st.className='dp-val '+(a.s==='Active'?'active':a.s==='Maintenance'?'maint':'restr');
   document.getElementById('dp-version').textContent=a.v;
   document.getElementById('dp-module').textContent=a.m;
-  document.getElementById('dp-open').textContent='Open '+a.n;
-  document.getElementById('empty-note').textContent=a.n+' selected. Module shell ready for integration.';
+  const openBtn=document.getElementById('dp-open');
+  openBtn.textContent='Open '+a.n;
+  openBtn.onclick=()=>{
+    if(a.n==='Account'){ location.href='account.html'; return; }
+    document.getElementById('empty-note').textContent=a.n+' selected. Module shell ready for integration.';
+  };
+  document.getElementById('empty-note').textContent=a.n==='Account'?'Account selected. Open module to manage identity and access.':a.n+' selected. Module shell ready for integration.';
 }
 
 function doSignOut(){
