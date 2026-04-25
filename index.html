@@ -672,9 +672,10 @@ function selectMod(a,el){
   openBtn.textContent='Open '+a.n;
   openBtn.onclick=()=>{
     if(a.n==='Account'){ location.href='account.html'; return; }
+    if(a.n==='Script'){ location.href='script.html'; return; }
     document.getElementById('empty-note').textContent=a.n+' selected. Module shell ready for integration.';
   };
-  document.getElementById('empty-note').textContent=a.n==='Account'?'Account selected. Open module to manage identity and access.':a.n+' selected. Module shell ready for integration.';
+  document.getElementById('empty-note').textContent=a.n==='Account'?'Account selected. Open module to manage identity and access.':a.n==='Script'?'Script selected. Open module to author structured documents.':a.n+' selected. Module shell ready for integration.';
 }
 
 function doSignOut(){
