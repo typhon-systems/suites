@@ -634,13 +634,13 @@ const ICONS={
 
 
 function openRoute(name){
-  const routes={Account:'account.html',Script:'script.html',Ledger:'ledger.html'};
+  const routes={Account:'account.html',Script:'script.html',Ledger:'ledger.html',Pitch:'pitch.html'};
   const target=routes[name];
   if(target){ window.location.href = target; return true; }
   return false;
 }
 function routeFor(name){
-  return ({Account:'account.html',Script:'script.html',Ledger:'ledger.html'})[name] || '#';
+  return ({Account:'account.html',Script:'script.html',Ledger:'ledger.html',Pitch:'pitch.html'})[name] || '#';
 }
 
 function enterSystem(){
