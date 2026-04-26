@@ -495,8 +495,8 @@ body::after{content:'';position:fixed;inset:0;opacity:.032;pointer-events:none;z
       <div class="dp-row"><span class="dp-key">Version</span><span class="dp-val" id="dp-version">1.0</span></div>
       <div class="dp-row"><span class="dp-key">Module</span><span class="dp-val" id="dp-module">core.launcher</span></div>
       <div class="dp-actions">
-        <button class="dp-btn" id="dp-open">Open Module</button>
-        <button class="dp-btn secondary" id="dp-details">View Details</button>
+        <a class="dp-btn" id="dp-open" href="#" role="button">Open Module</a>
+        <button class="dp-btn secondary" id="dp-details" type="button">View Details</button>
       </div>
     </aside>
   </div>
@@ -669,15 +669,14 @@ function selectMod(a,el){
   document.getElementById('dp-version').textContent=a.v;
   document.getElementById('dp-module').textContent=a.m;
   const openBtn=document.getElementById('dp-open');
+  const routes={Account:'account.html',Script:'script.html',Ledger:'ledger.html',Pitch:'pitch.html',Queue:'queue.html'};
   openBtn.textContent='Open '+a.n;
+  openBtn.href=routes[a.n] || '#';
   openBtn.onclick=(ev)=>{
+    if(routes[a.n]) return true;
     ev.preventDefault();
-    if(a.n==='Account'){ location.href='account.html'; return; }
-    if(a.n==='Script'){ location.href='script.html'; return; }
-    if(a.n==='Ledger'){ location.href='ledger.html'; return; }
-    if(a.n==='Pitch'){ location.href='pitch.html'; return; }
-    if(a.n==='Queue'){ location.href='queue.html'; return; }
     document.getElementById('empty-note').textContent=a.n+' selected. App page ready for setup.';
+    return false;
   };
   document.getElementById('empty-note').textContent=
     a.n==='Account'?'Account selected. Open module to manage identity and access.':
