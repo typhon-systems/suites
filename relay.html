@@ -18,7 +18,7 @@
   <div class="tbar"><div class="tbar-l"><div class="wm">Typhon.</div><div class="mod">Relay</div></div><div class="tbar-r"><div class="status"><div class="dot"></div><span>Ready.</span></div><div class="userbar"><span id="u-name"></span><a class="link" href="index.html">Dashboard</a><a class="link" href="#" onclick="signOut(event)">Sign out</a></div></div></div>
   <div class="layout">
     <aside class="left">
-      <div class="kicker">Messages</div><div class="title">Relay</div><div class="sub">Message other Typhon users on this browser.</div>
+      <div class="kicker">Messages</div><div class="title">Relay</div><div class="sub">Message registered Typhon users from this browser.</div>
       <input class="search" id="search" placeholder="Search conversations" oninput="renderConversations()">
       <div class="start"><select class="select" id="user-select"></select><button class="btn" onclick="startConversation()">New</button></div>
       <div class="conv-list" id="conv-list"></div>
@@ -30,8 +30,8 @@
     </main>
     <aside class="right">
       <div class="panel-section"><div class="rp-label">Conversation</div><div class="rp-row"><span class="rp-key">With</span><span class="rp-val" id="rp-with">—</span></div><div class="rp-row"><span class="rp-key">Messages</span><span class="rp-val" id="rp-count">0</span></div><div class="rp-row"><span class="rp-key">Updated</span><span class="rp-val" id="rp-updated">—</span></div></div>
-      <div class="panel-section"><div class="rp-label">Available users</div><div id="user-pills"></div><div class="note">Create more accounts from the main page, then return here to message them. This prototype stores messages locally.</div></div>
-      <div class="panel-section"><div class="rp-label">Quick actions</div><button class="btn ghost" onclick="seedDemoUsers()" style="width:100%;margin-bottom:8px">Add demo users</button><button class="btn ghost" onclick="exportMessages()" style="width:100%">Export messages</button></div>
+      <div class="panel-section"><div class="rp-label">Available users</div><div id="user-pills"></div><div class="note">Only registered accounts appear here. Messages are stored locally in this browser.</div></div>
+      <div class="panel-section"><div class="rp-label">Quick actions</div><button class="btn ghost" onclick="refreshUsers()" style="width:100%;margin-bottom:8px">Refresh users</button><button class="btn ghost" onclick="exportMessages()" style="width:100%">Export messages</button></div>
     </aside>
   </div>
 </div>
@@ -49,9 +49,9 @@ if(!session){document.getElementById('denied').classList.add('on')}else{document
 function threadId(a,b){return [a,b].sort((x,y)=>x.localeCompare(y)).join('__')}
 function users(){return Object.keys(gDB()).sort((a,b)=>a.localeCompare(b))}
 function init(){renderUsers();renderConversations()}
-function renderUsers(){const us=users().filter(u=>u!==session.username);const sel=document.getElementById('user-select');sel.innerHTML=us.length?us.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join(''):'<option value="">No other users</option>';document.getElementById('user-pills').innerHTML=(us.length?us:[session.username]).map(u=>`<span class="pill">${esc(u)}</span>`).join('')}
+function renderUsers(){const us=users().filter(u=>u!==session.username);const sel=document.getElementById('user-select');sel.innerHTML=us.length?us.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join(''):'<option value="">No other users</option>';document.getElementById('user-pills').innerHTML=us.length?us.map(u=>`<span class="pill">${esc(u)}</span>`).join(''):'<div class="note">No other registered users found. Create another account from the main page, then refresh Relay.</div>'}
 function allThreads(){const store=gR();return Object.entries(store).filter(([id,t])=>t.members&&t.members.includes(session.username)).sort((a,b)=>(b[1].updated||'').localeCompare(a[1].updated||''))}
-function startConversation(){const other=document.getElementById('user-select').value;if(!other){toast('No users available.');return}const id=threadId(session.username,other);const store=gR();if(!store[id])store[id]={id,members:[session.username,other],messages:[],updated:new Date().toISOString()};sR(store);activeId=id;renderConversations();renderChat();}
+function startConversation(){const other=document.getElementById('user-select').value;const db=gDB();if(!other||!db[other]||other===session.username){toast('No registered user selected.');return}const id=threadId(session.username,other);const store=gR();if(!store[id])store[id]={id,members:[session.username,other],messages:[],updated:new Date().toISOString()};sR(store);activeId=id;renderConversations();renderChat();}
 function renderConversations(){const q=document.getElementById('search').value.toLowerCase();const list=document.getElementById('conv-list');const threads=allThreads().filter(([id,t])=>otherName(t).toLowerCase().includes(q)||(lastText(t).toLowerCase().includes(q)));if(!threads.length){list.innerHTML='<div class="note" style="padding:12px">No conversations yet.</div>';return}list.innerHTML=threads.map(([id,t])=>`<div class="conv ${id===activeId?'on':''}" onclick="activeId='${id}';renderConversations();renderChat()"><div class="conv-top"><span class="conv-name">${esc(otherName(t))}</span><span class="conv-time">${fmt(t.updated)}</span></div><div class="conv-last">${esc(lastText(t)||'No messages yet.')}</div></div>`).join('')}
 function otherName(t){return (t.members||[]).find(x=>x!==session.username)||session.username}
 function lastText(t){const m=(t.messages||[]).at(-1);return m?`${m.from===session.username?'You':m.from}: ${m.text}`:''}
@@ -59,7 +59,7 @@ function renderChat(){const store=gR();const t=store[activeId];if(!t)return;cons
 function sendMessage(){if(!activeId){toast('Select or create a conversation.');return}const input=document.getElementById('message-input');const text=input.value.trim();if(!text)return;const store=gR();const t=store[activeId];t.messages.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),from:session.username,text,ts:new Date().toISOString()});t.updated=new Date().toISOString();sR(store);input.value='';renderConversations();renderChat();}
 function composerKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}}
 function clearThread(){if(!activeId)return;const store=gR();if(!store[activeId])return;if(!confirm('Clear this conversation for everyone on this local prototype?'))return;store[activeId].messages=[];store[activeId].updated=new Date().toISOString();sR(store);renderConversations();renderChat();toast('Thread cleared.')}
-function seedDemoUsers(){const db=gDB();['alex','mira','sam'].forEach(u=>{if(!db[u])db[u]={pass:'demo',display:u,created:new Date().toISOString().slice(0,10)}});sDB(db);renderUsers();toast('Demo users added.')}
+function refreshUsers(){renderUsers();renderConversations();toast('Users refreshed.')}
 function exportMessages(){const blob=new Blob([JSON.stringify(gR(),null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='typhon-relay-export.json';a.click();URL.revokeObjectURL(url);toast('Export prepared.')}
 function signOut(e){e.preventDefault();localStorage.removeItem(SE);location.href='index.html'}
 function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),2200)}
