@@ -44,11 +44,36 @@ const gS=()=>{try{return JSON.parse(localStorage.getItem(SE)||'null')}catch{retu
 const gR=()=>{try{return JSON.parse(localStorage.getItem(RELAY)||'{}')}catch{return{}}};
 const sR=d=>localStorage.setItem(RELAY,JSON.stringify(d));
 const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');let rx=0,ry=0,mx=0,my=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});(function anim(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(anim)})();document.addEventListener('mouseover',e=>{if(e.target.closest('button,a,input,textarea,select,.conv'))document.body.classList.add('cur-big')});document.addEventListener('mouseout',e=>{if(e.target.closest('button,a,input,textarea,select,.conv'))document.body.classList.remove('cur-big')});
+const DEMO_NAMES=['alex','mira','sam'];
 let session=gS(),activeId=null;
 if(!session){document.getElementById('denied').classList.add('on')}else{document.getElementById('app').classList.add('on');document.getElementById('u-name').textContent=session.display||session.username;init()}
 function threadId(a,b){return [a,b].sort((x,y)=>x.localeCompare(y)).join('__')}
-function users(){return Object.keys(gDB()).sort((a,b)=>a.localeCompare(b))}
-function init(){renderUsers();renderConversations()}
+function users(){const db=gDB();return Object.keys(db).filter(u=>!(DEMO_NAMES.includes(u)&&db[u]&&db[u].pass==='demo')).sort((a,b)=>a.localeCompare(b))}
+function cleanupSeededDemoData(){
+  const db=gDB();
+  let changed=false;
+  DEMO_NAMES.forEach(u=>{
+    if(db[u]&&db[u].pass==='demo'){
+      delete db[u];
+      changed=true;
+    }
+  });
+  if(changed) sDB(db);
+
+  const valid=new Set(Object.keys(db));
+  const store=gR();
+  let relayChanged=false;
+  Object.keys(store).forEach(id=>{
+    const members=store[id]&&store[id].members?store[id].members:[];
+    if(members.some(m=>!valid.has(m))){
+      delete store[id];
+      relayChanged=true;
+    }
+  });
+  if(relayChanged) sR(store);
+}
+
+function init(){cleanupSeededDemoData();renderUsers();renderConversations();renderChat()}
 function renderUsers(){const us=users().filter(u=>u!==session.username);const sel=document.getElementById('user-select');sel.innerHTML=us.length?us.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join(''):'<option value="">No other users</option>';document.getElementById('user-pills').innerHTML=us.length?us.map(u=>`<span class="pill">${esc(u)}</span>`).join(''):'<div class="note">No other registered users found. Create another account from the main page, then refresh Relay.</div>'}
 function allThreads(){const store=gR();return Object.entries(store).filter(([id,t])=>t.members&&t.members.includes(session.username)).sort((a,b)=>(b[1].updated||'').localeCompare(a[1].updated||''))}
 function startConversation(){const other=document.getElementById('user-select').value;const db=gDB();if(!other||!db[other]||other===session.username){toast('No registered user selected.');return}const id=threadId(session.username,other);const store=gR();if(!store[id])store[id]={id,members:[session.username,other],messages:[],updated:new Date().toISOString()};sR(store);activeId=id;renderConversations();renderChat();}
