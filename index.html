@@ -611,7 +611,7 @@ const APPS=[
   {n:'Ledger',d:'Tables, records, finance tracking, and audit-ready calculations.',s:'Active',v:'1.2',m:'ledger.core',c:['#76ad78','#2d7338']},
   {n:'Scope',d:'Research, browsing, source capture, and project visibility.',s:'Active',v:'1.0',m:'scope.core',c:['#a578c2','#5a2d84']},
   {n:'Pitch',d:'Presentation building with structured slides and controlled exports.',s:'Active',v:'1.1',m:'pitch.core',c:['#d98a4e','#b84d2f']},
-  {n:'Queue',d:'Tasks, dispatch, priority, and operational work routing.',s:'Active',v:'1.3',m:'queue.core',c:['#d2aa4f','#9a7424']},
+  {n:'Queue',d:'Tasks, lists, reminders, priorities, and everyday planning.',s:'Active',v:'1.0',m:'queue.app',c:['#d2aa4f','#9a7424']},
   {n:'Relay',d:'Internal messaging and communication relay.',s:'Maintenance',v:'0.9',m:'relay.core',c:['#6aa7d8','#2f6e9f']},
   {n:'Flow',d:'Forms, processes, approvals, and workflow control.',s:'Active',v:'1.2',m:'flow.core',c:['#65aaa6','#287a76']},
   {n:'Notes',d:'Fast capture, retrieval, and lightweight knowledge storage.',s:'Active',v:'1.0',m:'notes.core',c:['#8e70d2','#6132a0']},
@@ -676,7 +676,8 @@ function selectMod(a,el){
     if(a.n==='Script'){ location.href='script.html'; return; }
     if(a.n==='Ledger'){ location.href='ledger.html'; return; }
     if(a.n==='Pitch'){ location.href='pitch.html'; return; }
-    document.getElementById('empty-note').textContent=a.n+' selected. Module shell ready for integration.';
+    if(a.n==='Queue'){ location.href='queue.html'; return; }
+    document.getElementById('empty-note').textContent=a.n+' selected. App page ready for setup.';
   };
   document.getElementById('empty-note').textContent=
     a.n==='Account'?'Account selected. Open module to manage identity and access.':
